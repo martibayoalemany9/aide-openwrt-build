@@ -1,7 +1,9 @@
-# AIDE 0.19.3 for GL.iNet/OpenWrt (AArch64 musl)
+# AIDE 0.19.3 for GL.iNet/OpenWrt (AArch64 and ARMv7 musl)
 
-This repository documents and automates the source build used to produce a compact
-`aide` binary for a GL.iNet BE3600 router.
+This repository documents and automates two compact `aide` binaries:
+
+- AArch64 Cortex-A53 for the NordNet Fiber router
+- ARMv7 Cortex-A7 EABI5 hard-float for the Movistar E554 VPN router
 
 The binary was compiled and tested in an isolated local QEMU clone before being
 copied to the target. No router credentials are stored here.
@@ -17,6 +19,13 @@ copied to the target. No router credentials are stored here.
 | Runtime dependencies | musl loader/libc and `libgcc_s.so.1` |
 | Static libraries | PCRE2 10.42 and Nettle 3.9.1 |
 
+| Target | Size | SHA-256 | Baseline |
+|---|---:|---|---:|
+| AArch64 Cortex-A53 | 599,720 bytes | `2d8f8f1171cfbec1bfc6ea66a3f7d4732b8f0152d54a00637760b3c750a3cf8d` | 9,000 entries |
+| ARMv7 Cortex-A7 hard-float | 522,084 bytes | `6bd027ff8fc4d21cec7993af9cab4eab2c31055164dd3efd5b716802a4ffc8e9` | 4,850 entries |
+
+These binaries are architecture-specific and are not interchangeable.
+
 The tested binary was installed as `/usr/bin/aide`.
 
 ## Repository contents
@@ -25,6 +34,9 @@ The tested binary was installed as `/usr/bin/aide`.
 - `scripts/prepare-sources.sh` — downloads, verifies, and repacks source archives
   for BusyBox `tar`
 - `scripts/install-and-test.sh` — target installation and smoke-test commands
+- `scripts/build-release-binary.sh` — container-native AArch64/ARMv7 release build
+- `scripts/check-release-binary.sh` — clean/changed runtime integrity test
+- `.github/workflows/daily-build-release.yml` — guarded daily builds and releases
 - `config/aide.conf` — overlayfs-safe integrity policy used on the router
 - `web/` — local web report
 - `serve-report.sh` — serves the report at `http://127.0.0.1:8080`
@@ -154,6 +166,26 @@ On the target:
 3. Inspect runtime libraries with `ldd`.
 4. Initialize the router integrity database.
 5. Run a clean check: 9,000 entries, no differences, exit code `0`.
+
+The Movistar ARMv7 deployment was also initialized with 4,850 entries. Its
+controlled added-file test returned exit code `5`; after removing the fixture and
+refreshing the baseline, the live check returned `0`.
+
+## Daily GitHub release
+
+GitHub Actions checks once per UTC day whether the date-keyed AIDE release already
+exists. Only when it does not exist does it:
+
+1. emulate the AArch64 and ARMv7 platforms;
+2. verify pinned upstream source checksums;
+3. compile PCRE2, Nettle, and AIDE;
+4. reject ELF binaries containing `TEXTREL`;
+5. test a clean database check (`0`) and changed-file detection (`4`);
+6. publish both stripped binaries and their SHA-256 files.
+
+The release tag is `aide-0.19.3-YYYYMMDD`. The daily gate plus workflow
+concurrency prevents more than one build-and-release set per UTC day, including
+manual dispatches.
 
 ## Router integrity database
 
