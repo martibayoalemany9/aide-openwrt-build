@@ -9,12 +9,12 @@
 </head>
 <body>
   <header class="hero">
-    <nav><span class="mark">AIDE // OPENWRT</span><a href="#commands">Commands</a><a href="#integrity">Integrity DB</a></nav>
+    <nav><span class="mark">AIDE // OPENWRT</span><a href="#repositories">Repositories</a><a href="#commands">Options</a><a href="#integrity">Integrity DB</a><a href="#proof">Proof</a></nav>
     <div class="hero-copy">
       <p class="eyebrow">REPRODUCIBLE SECURITY BUILD · 29 JUL 2026</p>
       <h1>From source tree<br>to trusted baseline.</h1>
       <p class="lede">A verified AArch64 musl build of AIDE 0.19.3, compiled inside a local QEMU clone and validated on a GL.iNet BE3600 router.</p>
-      <div class="status"><span class="pulse"></span><strong>VALIDATED</strong><span>9,052 entries · 0 differences</span></div>
+      <div class="status"><span class="pulse"></span><strong>VALIDATED</strong><span>9,000 entries · 0 differences</span></div>
     </div>
   </header>
 
@@ -23,7 +23,7 @@
       <article><span>Binary</span><strong>599,720</strong><small>bytes, stripped</small></article>
       <article><span>Architecture</span><strong>AArch64</strong><small>Cortex-A53 · musl</small></article>
       <article><span>Clean check</span><strong>EXIT 0</strong><small>50 second scan</small></article>
-      <article><span>Coverage</span><strong>9,052</strong><small>filesystem entries</small></article>
+      <article><span>Coverage</span><strong>9,000</strong><small>filesystem entries</small></article>
     </section>
 
     <section class="story">
@@ -32,6 +32,19 @@
         <h2>A small binary for a constrained router.</h2>
       </div>
       <p>The router package feeds did not provide AIDE. We reproduced the device environment in QEMU, assembled the compiler in tmpfs, built mandatory cryptographic dependencies statically, and kept only musl and libgcc as runtime dependencies.</p>
+    </section>
+
+    <section id="repositories">
+      <p class="eyebrow">REPOSITORY MAP</p>
+      <h2 class="section-title">Sources, workspace, and published result.</h2>
+      <div class="repo-list">
+        <article><span>Published GitHub</span><strong>martibayoalemany9/aide-openwrt-build</strong><p>Scripts, policy, checksums, and this report.</p></article>
+        <article><span>AIDE source</span><strong>aide/aide</strong><p>Upstream 0.19.3 release.</p></article>
+        <article><span>PCRE2 source</span><strong>PCRE2Project/pcre2</strong><p>Mandatory regex library, statically linked.</p></article>
+        <article><span>GNU sources</span><strong>nettle · bison</strong><p>Cryptographic hashes and parser skeleton data.</p></article>
+        <article><span>QEMU workspace</span><strong>openwrt-qemu-aarch64-overlay</strong><p>Local clone, boot tooling, and build output.</p></article>
+        <article><span>Local checkout</span><strong>Desktop/aide-openwrt-build</strong><p>The Git checkout serving this report.</p></article>
+      </div>
     </section>
 
     <section>
@@ -47,16 +60,22 @@
 
     <section class="dark" id="commands">
       <div>
-        <p class="eyebrow">REPRODUCE</p>
-        <h2>The complete build is executable.</h2>
-        <p>Every dependency version, configure flag, environment variable, and workaround is captured in the repository scripts.</p>
+        <p class="eyebrow">AIDE OPTIONS</p>
+        <h2>The router exposes the full integrity workflow.</h2>
+        <p>Initialize, check, update, compare, list, validate configuration, inspect path matching, limit scans, and select worker count.</p>
       </div>
-      <pre><code>./scripts/prepare-sources.sh ./distfiles
-# copy distfiles + build script into QEMU
-/tmp/build-aide-openwrt.sh /tmp/distfiles
-
-sha256sum /tmp/aide-0.19.3/aide
-# 2d8f8f1171cf...3cf8d</code></pre>
+      <div class="option-list">
+        <code>--init</code><span>Create a new database</span>
+        <code>--dry-init</code><span>Test rule traversal</span>
+        <code>--check</code><span>Compare filesystem to baseline</span>
+        <code>--update</code><span>Check and write an updated database</span>
+        <code>--compare</code><span>Compare two databases</span>
+        <code>--list</code><span>List recorded entries</span>
+        <code>--config-check</code><span>Validate configuration</span>
+        <code>--path-check</code><span>Inspect one path's rule match</span>
+        <code>--limit</code><span>Restrict scan by regex</span>
+        <code>--workers</code><span>Choose hash worker threads</span>
+      </div>
     </section>
 
     <section id="integrity">
@@ -66,6 +85,44 @@ sha256sum /tmp/aide-0.19.3/aide
         <article class="feature"><h2>Where it lives</h2><code>/etc/aide/aide.db</code><p>The persistent policy is <code>/etc/aide.conf</code>; the executable is <code>/usr/bin/aide</code>. OpenWrt's <code>/var</code> is volatile.</p></article>
         <article class="feature"><h2>How to check</h2><code>aide --config=/etc/aide.conf --check</code><p>Exit 0 is clean. Added, removed, and changed files set bit flags 1, 2, and 4.</p></article>
         <article class="feature accent"><h2>Trust rule</h2><p>Keep read-only, off-router copies of both the database and policy. A baseline controlled by the monitored host alone cannot prove that host is trustworthy after compromise.</p></article>
+      </div>
+    </section>
+
+    <section class="conf">
+      <div><p class="eyebrow">ACTIVE /etc/aide.conf</p><h2 class="section-title">Persistent baseline. Quiet where the router is expected to write.</h2><p>The AIDE database and dynamic GL.iNet service databases are excluded. All core executable, library, configuration, web, and root paths are covered.</p></div>
+      <pre><code>database_in=file:/etc/aide/aide.db
+database_out=file:/etc/aide/aide.db.new
+database_new=file:/etc/aide/aide.db.new
+log_level=notice
+Checks = p+n+u+g+s+m+c+sha256
+!/etc/aide(/.*)?$
+!/etc/AdGuardHome/data(/.*)?$
+!/etc/netifyd(/.*)?$
+!/etc/oui-tertf(/.*)?$
+!/tmp
+!/var/run
+!/run
+!/proc
+!/sys
+!/dev
+/bin Checks
+/sbin Checks
+/etc Checks
+/lib Checks
+/usr Checks
+/www Checks
+/root Checks</code></pre>
+    </section>
+
+    <section id="proof" class="proof">
+      <p class="eyebrow">LIVE PROOF · 29 JUL 2026</p>
+      <h2 class="section-title">One added file. Immediately detected.</h2>
+      <div class="proof-grid">
+        <pre><code>$ printf 'AIDE live integrity test\n' \
+  &gt; /etc/integrity-demo.txt
+$ aide --config=/etc/aide.conf \
+  --check --no-progress --no-color</code></pre>
+        <div class="result"><span>ADDED ENTRIES</span><strong>1</strong><code>f+++++++++++++: /etc/integrity-demo.txt</code><p>Exit <b>5</b> = added file bit <b>1</b> + changed parent-directory bit <b>4</b>.</p></div>
       </div>
     </section>
 
