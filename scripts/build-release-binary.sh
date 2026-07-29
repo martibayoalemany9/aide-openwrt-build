@@ -21,7 +21,7 @@ case "$ARCH" in
     ;;
 esac
 
-apk add --no-cache build-base bison flex m4 curl file gettext-dev linux-headers perl pkgconf
+apk add --no-cache build-base bison flex m4 curl file gettext-dev linux-headers perl pkgconf rust
 mkdir -p "$ROOT" "$PREFIX" "$OUT"
 cd "$ROOT"
 

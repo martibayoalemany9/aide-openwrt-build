@@ -57,7 +57,7 @@ jobs:
           mkdir -p dist
           docker run --rm --platform "${{ matrix.platform }}" \
             -v "$PWD:/work" -w /work "${{ matrix.image }}" \
-            sh scripts/build-release-binary.sh "${{ matrix.arch }}"
+            sh -c "scripts/build-release-binary.sh '${{ matrix.arch }}' && scripts/check-architecture-examples.sh '${{ matrix.arch }}'"
       - name: Runtime integrity smoke test
         run: |
           binary="$(find dist -type f ! -name '*.sha256' -print -quit)"

@@ -56,12 +56,48 @@
   line-height: 1.6;
 }
 
+.code-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin-top: 42px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+
+.code-grid article {
+  min-width: 0;
+  padding: 28px;
+  background: var(--paper);
+}
+
+.code-grid article > span {
+  font: 700 11px var(--mono);
+  letter-spacing: .1em;
+}
+
+.code-grid pre {
+  overflow: auto;
+  padding: 18px;
+  background: var(--ink);
+  color: var(--acid);
+  font: 12px/1.55 var(--mono);
+}
+
+.code-grid p {
+  line-height: 1.5;
+}
+
 .hash button {
   white-space: pre-line;
 }
 
 @media (max-width: 800px) {
   .arch-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .code-grid {
     grid-template-columns: 1fr;
   }
 }

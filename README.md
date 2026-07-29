@@ -36,6 +36,9 @@ The tested binary was installed as `/usr/bin/aide`.
 - `scripts/install-and-test.sh` — target installation and smoke-test commands
 - `scripts/build-release-binary.sh` — container-native AArch64/ARMv7 release build
 - `scripts/check-release-binary.sh` — clean/changed runtime integrity test
+- `scripts/check-architecture-examples.sh` — runs C, C++, Rust, and assembly target checks
+- `docs/architecture-behavior.md` — processor-dependent code and expected output
+- `examples/` — runnable AArch64/ARMv7 source examples
 - `.github/workflows/daily-build-release.yml` — guarded daily builds and releases
 - `config/aide.conf` — overlayfs-safe integrity policy used on the router
 - `web/` — local web report

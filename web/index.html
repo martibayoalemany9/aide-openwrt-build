@@ -67,6 +67,29 @@
       <p>The router package feeds did not provide AIDE. We reproduced the device environment in QEMU, assembled the compiler in tmpfs, built mandatory cryptographic dependencies statically, and kept only musl and libgcc as runtime dependencies.</p>
     </section>
 
+    <section id="code">
+      <p class="eyebrow">PROCESSOR-DEPENDENT CODE</p>
+      <h2 class="section-title">Four languages. Two target contracts.</h2>
+      <div class="code-grid">
+        <article><span>C</span><pre><code>#if defined(__aarch64__)
+architecture = "AArch64";
+#elif defined(__arm__)
+architecture = "ARMv7";
+#endif</code></pre><p><code>sizeof(void*)</code> is 8 versus 4.</p></article>
+        <article><span>C++</span><pre><code>#if defined(__ARM_PCS_VFP)
+architecture =
+  "ARMv7-hard-float";
+#endif</code></pre><p>The ARMv7 build uses the VFP hard-float calling convention.</p></article>
+        <article><span>RUST</span><pre><code>#[cfg(target_arch="aarch64")]
+let architecture = "AArch64";
+println!("{}", usize::BITS);</code></pre><p><code>usize::BITS</code> is 64 versus 32.</p></article>
+        <article><span>ASSEMBLY</span><pre><code>// AArch64     // ARMv7
+mov w0,#64     mov r0,#32
+ret            bx lr</code></pre><p>Return registers and return instructions differ.</p></article>
+      </div>
+      <p class="architecture-note">The daily workflow compiles and runs every example inside its matching emulated processor before publishing. Full source and expected output are documented in <code>docs/architecture-behavior.md</code>.</p>
+    </section>
+
     <section id="repositories">
       <p class="eyebrow">REPOSITORY MAP</p>
       <h2 class="section-title">Sources, workspace, and published result.</h2>
