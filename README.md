@@ -42,6 +42,7 @@ The tested binary was installed as `/usr/bin/aide`.
 - `.github/workflows/daily-build-release.yml` — guarded daily builds and releases
 - `config/aide.conf` — overlayfs-safe integrity policy used on the router
 - `web/` — local web report
+- `security-report/` — Nmap exposure, vulnerability triage, GitHub scan, and raw evidence
 - `serve-report.sh` — serves the report at `http://127.0.0.1:8080`
 
 ## Build environment

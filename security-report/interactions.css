@@ -1,0 +1,46 @@
+details {
+  min-width: 190px;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--green);
+  font: 700 11px var(--mono);
+  text-transform: uppercase;
+}
+
+summary::marker {
+  color: var(--green);
+}
+
+details p {
+  margin: 12px 0 2px;
+  line-height: 1.5;
+}
+
+.hsts-explainer {
+  display: grid;
+  grid-template-columns: .35fr 1.65fr;
+  gap: 35px;
+  margin: 30px 0;
+  padding: 28px;
+  border: 1px solid var(--ink);
+  background: var(--acid);
+}
+
+.hsts-explainer span {
+  font: 700 12px var(--mono);
+  letter-spacing: .1em;
+}
+
+.hsts-explainer p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+@media (max-width: 850px) {
+  .hsts-explainer {
+    grid-template-columns: 1fr;
+  }
+}
