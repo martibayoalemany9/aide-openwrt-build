@@ -7,6 +7,7 @@
   <title>Router Exposure &amp; Vulnerability Report</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="interactions.css">
+  <link rel="stylesheet" href="remediation.css">
 </head>
 <body>
   <header>
@@ -22,7 +23,7 @@
       <p class="kicker">POINT-IN-TIME ASSESSMENT · 29 JUL 2026 · EUROPE/BERLIN</p>
       <h1>Two routers.<br>One measured attack surface.</h1>
       <p class="intro">Network service discovery, targeted Nmap vulnerability checks, TLS and SSH configuration review, and GitHub SARIF code scanning for the AIDE build repository.</p>
-      <div class="hero-status"><span></span><b>NO CONFIRMED REMOTE COMPROMISE</b><em>1 medium-priority version-correlated candidate requires patch verification</em></div>
+      <div class="hero-status"><span></span><b>TERRAPIN MITIGATED</b><em>ChaCha20-Poly1305 removed · fresh login and external rescan passed</em></div>
     </div>
   </header>
 
@@ -40,7 +41,7 @@
         <h2>Exposure is controlled, but one old SSH banner needs verification.</h2>
       </div>
       <div class="summary-copy">
-        <p>Movistar exposes SSH 22 and HTTPS 443 through the tested Tailscale path. Its TLS configuration is strong, but the SSH banner reports OpenSSH 8.4. Nmap’s Vulners lookup therefore returned many version-range candidates. Most are client-side, configuration-dependent, or may already be fixed by OpenWrt backports.</p>
+        <p>Movistar exposes SSH 22 and HTTPS 443 through the tested Tailscale path. Its TLS configuration is strong, but the SSH banner reports OpenSSH 8.4. The Terrapin-relevant ChaCha20-Poly1305 cipher was removed on 29 July 2026. A full sshd restart, fresh login, and external Nmap rescan confirmed that only AES-GCM and AES-CTR remain advertised.</p>
         <p>NordNet exposes DNS and five web-management ports in the targeted pass. Several services are TCP-wrapped and the router rate-limited later probes, preventing reliable version-to-CVE correlation. This is a scan limitation, not evidence of safety.</p>
       </div>
     </section>
@@ -71,7 +72,7 @@
           <table>
             <thead><tr><th>Port</th><th>State</th><th>Identification</th><th>Assessment</th></tr></thead>
             <tbody>
-              <tr><td>22/tcp</td><td><i class="open">open</i></td><td>OpenSSH 8.4</td><td><details open><summary>Version risk</summary><p>The banner matches several upstream CVE ranges. Firmware backports must be checked before calling any candidate confirmed.</p></details></td></tr>
+              <tr><td>22/tcp</td><td><i class="open">open</i></td><td>OpenSSH 8.4p1-4</td><td><details open><summary>Mitigated</summary><p>The banner remains old, but the Terrapin-affected ChaCha20-Poly1305 mode is no longer advertised. AES-GCM and AES-CTR remain. Upgrade is still preferred when a supported package becomes available.</p></details></td></tr>
               <tr><td>443/tcp</td><td><i class="open">open</i></td><td>nginx · Admin Panel</td><td><details><summary>TLS details</summary><p>TLS 1.2/1.3, grade-A ciphers, valid Let’s Encrypt certificate, and HSTS with a one-year lifetime.</p></details></td></tr>
               <tr><td>53,80/tcp</td><td><i class="filtered">filtered</i></td><td>DNS / HTTP</td><td>Silently filtered.</td></tr>
               <tr><td>139,445/tcp</td><td><i class="filtered">filtered</i></td><td>SMB/NetBIOS</td><td>Silently filtered.</td></tr>
@@ -86,18 +87,18 @@
       <p class="kicker">VULNERABILITY TRIAGE</p>
       <h2>Candidates are ranked by applicability—not scanner score alone.</h2>
       <div class="findings">
-        <article class="medium">
-          <div><span>MEDIUM · INVESTIGATE</span><b>Movistar · SSH 22</b></div>
+        <article class="resolved">
+          <div><span>MITIGATED · VERIFIED</span><b>Movistar · SSH 22</b></div>
           <h3><a href="https://nvd.nist.gov/vuln/detail/CVE-2023-48795">CVE-2023-48795 — Terrapin</a></h3>
-          <p>OpenSSH 8.4 is within the affected upstream range and the server offered <code>chacha20-poly1305@openssh.com</code>. Nmap did not show the strict key-exchange extension introduced by patched implementations. This is a credible protocol-level candidate, but OpenWrt may have backported a fix without changing the banner.</p>
-          <p class="action">Action: verify the OpenWrt package changelog or upgrade OpenSSH; disable vulnerable modes if a patched package is unavailable.</p>
+          <p>OpenSSH 8.4p1-4 remains in the upstream affected version range and does not advertise strict key exchange. The practical server-side mitigation removes <code>chacha20-poly1305@openssh.com</code>; the observed MAC list never contained CBC Encrypt-then-MAC modes.</p>
+          <p class="action">Result: syntax validation, full sshd restart, fresh password login, service status, and external Nmap algorithm enumeration all passed.</p>
         </article>
 
-        <article class="conditional">
-          <div><span>CONDITIONAL</span><b>Movistar · SSH 22</b></div>
+        <article class="resolved">
+          <div><span>CONDITION ABSENT</span><b>Movistar · SSH 22</b></div>
           <h3><a href="https://nvd.nist.gov/vuln/detail/CVE-2021-41617">CVE-2021-41617 — sshd supplemental groups</a></h3>
-          <p>The banner version matches the affected range, but exploitation requires non-default <code>AuthorizedKeysCommand</code> or <code>AuthorizedPrincipalsCommand</code> configuration. The network scan cannot establish that condition.</p>
-          <p class="action">Action: inspect <code>sshd_config</code> and confirm the firmware backport status.</p>
+          <p>The installed version matches the upstream range, but the exploitable configuration path is inactive. Effective configuration reports <code>AuthorizedKeysCommand none</code> and <code>AuthorizedPrincipalsCommand none</code>, with no active helper directives.</p>
+          <p class="action">Result: not reachable under the current server configuration. Reassess if either command helper is enabled later.</p>
         </article>
 
         <article class="context">
@@ -112,6 +113,49 @@
           <p>The NSE script labeled the endpoint vulnerable, but service detection and response headers identify nginx. NVD limits this CVE to old Apache HTTP Server releases, so this result is rejected unless an Apache reverse-proxy layer is independently demonstrated.</p>
         </article>
       </div>
+    </section>
+
+    <section id="remediation" class="remediation">
+      <p class="kicker">MOVISTAR SSH REMEDIATION · 29 JUL 2026</p>
+      <h2>Validated, reversible, and externally confirmed.</h2>
+      <div class="remediation-grid">
+        <article>
+          <span>BEFORE</span>
+          <pre><code>chacha20-poly1305@openssh.com
+aes256-gcm@openssh.com
+aes128-gcm@openssh.com
+aes256-ctr
+aes128-ctr</code></pre>
+        </article>
+        <article>
+          <span>AFTER</span>
+          <pre><code>aes256-gcm@openssh.com
+aes128-gcm@openssh.com
+aes256-ctr
+aes128-ctr</code></pre>
+        </article>
+      </div>
+      <details open class="audit-details">
+        <summary>Change and rollback details</summary>
+        <table>
+          <tbody>
+            <tr><th>Active configuration</th><td><code>/etc/ssh/sshd_config</code></td></tr>
+            <tr><th>Rollback backup</th><td><code>/etc/ssh/sshd_config.pre-terrapin-20260729_165424_GMT</code></td></tr>
+            <tr><th>Active SHA-256</th><td><code>3f88c1439f32d48d430057dcd1bafbbbdbd4538bbd73a5809052fad5a37f3c4c</code></td></tr>
+            <tr><th>Backup SHA-256</th><td><code>b6bb583c0ac0349257ce6ab0bebb2814abb5b73840ea08049ffff475ba64434a</code></td></tr>
+            <tr><th>Validation</th><td><code>sshd -t</code>, effective configuration, full restart, fresh login, Nmap enumeration</td></tr>
+            <tr><th>Service result</th><td><code>running</code>; post-restart login succeeded</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="audit-details">
+        <summary>Exact effective security state</summary>
+        <pre><code>ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes128-ctr
+macs hmac-sha2-512,hmac-sha2-256
+kexalgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group14-sha256
+authorizedkeyscommand none
+authorizedprincipalscommand none</code></pre>
+      </details>
     </section>
 
     <section id="transport">
@@ -137,7 +181,7 @@
           <ul>
             <li>Modern Curve25519 and group14-SHA256 key exchange</li>
             <li>Ed25519 and RSA-SHA2 host keys</li>
-            <li>ChaCha20-Poly1305, AES-GCM, and AES-CTR encryption</li>
+            <li>AES-GCM and AES-CTR encryption; ChaCha20-Poly1305 disabled</li>
             <li>SHA-2 MACs only in the observed list</li>
             <li>No SHA-1 host signatures or CBC encryption advertised</li>
           </ul>
@@ -170,7 +214,7 @@
     <section id="recommendations">
       <p class="kicker">PRIORITIZED ACTIONS</p>
       <ol class="recommendations">
-        <li><b>Verify or upgrade Movistar OpenSSH.</b><span>Confirm patches for CVE-2023-48795 and CVE-2021-41617 rather than relying on the 8.4 banner.</span></li>
+        <li><b>Upgrade Movistar OpenSSH when supported.</b><span>The cipher mitigation is verified, but a vendor-supported version with strict key exchange remains the preferred long-term fix.</span></li>
         <li><b>Apply and verify NordNet HSTS.</b><span>Add <code>Strict-Transport-Security: max-age=31536000; includeSubDomains</code> to the HTTPS server after management access recovers, validate nginx, reload, and verify ports 443 and 8443.</span></li>
         <li><b>Reduce NordNet management listeners.</b><span>Restrict or disable ports 80, 3000, and 8080 if 8443 provides the required administration path.</span></li>
         <li><b>Validate NordNet TCP DNS exposure.</b><span>Ensure port 53 is intentionally reachable over Tailscale and recursion/access control is scoped appropriately.</span></li>
@@ -187,6 +231,7 @@
         <a href="raw/nordnet-vulnerability-scan.nmap"><b>NordNet vulnerability pass</b><span>Rate-limited result</span></a>
         <a href="raw/movistar-service-scan.nmap"><b>Movistar service scan</b><span>TLS, SSH, headers</span></a>
         <a href="raw/movistar-vulnerability-scan.nmap"><b>Movistar vulnerability pass</b><span>Vulners and NSE output</span></a>
+        <a href="raw/movistar-post-terrapin-final.nmap"><b>Movistar post-fix SSH scan</b><span>ChaCha absent; four AES ciphers</span></a>
       </div>
       <div class="limitations">
         <p><b>Scanner:</b> Nmap 7.99 over Tailscale. Full 65,535-port attempts hit host timeouts because silent filtering made completion impractical; targeted results are authoritative only for the listed ports at scan time.</p>
