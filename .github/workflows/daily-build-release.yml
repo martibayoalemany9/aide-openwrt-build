@@ -1,0 +1,91 @@
+name: Daily build, check, and release
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aide-daily-release
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      release_date: ${{ steps.gate.outputs.release_date }}
+      should_build: ${{ steps.gate.outputs.should_build }}
+    steps:
+      - id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_date="$(date -u +%Y%m%d)"
+          tag="aide-0.19.3-${release_date}"
+          echo "release_date=$release_date" >> "$GITHUB_OUTPUT"
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" >/dev/null 2>&1; then
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            echo "Release ${tag} already exists; daily limit reached."
+          else
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.should_build == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            platform: linux/arm64
+            image: arm64v8/alpine:3.20
+          - arch: armv7
+            platform: linux/arm/v7
+            image: arm32v7/alpine:3.20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64,arm
+      - name: Build ${{ matrix.arch }}
+        run: |
+          mkdir -p dist
+          docker run --rm --platform "${{ matrix.platform }}" \
+            -v "$PWD:/work" -w /work "${{ matrix.image }}" \
+            sh -c "scripts/build-release-binary.sh '${{ matrix.arch }}' && scripts/check-architecture-examples.sh '${{ matrix.arch }}'"
+      - name: Runtime integrity smoke test
+        run: |
+          binary="$(find dist -type f ! -name '*.sha256' -print -quit)"
+          docker run --rm --platform "${{ matrix.platform }}" \
+            -v "$PWD:/work" -w /work "${{ matrix.image }}" \
+            sh scripts/check-release-binary.sh "/work/$binary"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aide-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    needs: [gate, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - name: Publish daily release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_DATE: ${{ needs.gate.outputs.release_date }}
+        run: |
+          tag="aide-0.19.3-${RELEASE_DATE}"
+          gh release create "$tag" release/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "AIDE 0.19.3 OpenWrt builds ${RELEASE_DATE}" \
+            --notes "Automated AArch64 Cortex-A53 and ARMv7 Cortex-A7 hard-float musl builds. Source checksums, ELF TEXTREL checks, and clean/changed AIDE runtime tests passed."

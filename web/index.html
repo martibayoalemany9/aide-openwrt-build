@@ -6,24 +6,57 @@
   <meta name="description" content="Reproducible AIDE 0.19.3 build report for GL.iNet OpenWrt">
   <title>AIDE on OpenWrt — Build & Integrity Report</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="architectures.css">
 </head>
 <body>
   <header class="hero">
-    <nav><span class="mark">AIDE // OPENWRT</span><a href="#commands">Commands</a><a href="#integrity">Integrity DB</a></nav>
+    <nav><span class="mark">AIDE // OPENWRT</span><a href="../security-report/">Security</a><a href="#architectures">Architectures</a><a href="#repositories">Repositories</a><a href="#commands">Options</a><a href="#integrity">Integrity DB</a><a href="#proof">Proof</a></nav>
     <div class="hero-copy">
       <p class="eyebrow">REPRODUCIBLE SECURITY BUILD · 29 JUL 2026</p>
       <h1>From source tree<br>to trusted baseline.</h1>
-      <p class="lede">A verified AArch64 musl build of AIDE 0.19.3, compiled inside a local QEMU clone and validated on a GL.iNet BE3600 router.</p>
-      <div class="status"><span class="pulse"></span><strong>VALIDATED</strong><span>9,052 entries · 0 differences</span></div>
+      <p class="lede">Two verified musl builds of AIDE 0.19.3: AArch64 Cortex-A53 for NordNet Fiber and ARMv7 Cortex-A7 hard-float for Movistar E554 VPN.</p>
+      <div class="status"><span class="pulse"></span><strong>BOTH CLEAN</strong><span>13,850 entries · 0 differences</span></div>
     </div>
   </header>
 
   <main>
     <section class="metrics">
-      <article><span>Binary</span><strong>599,720</strong><small>bytes, stripped</small></article>
-      <article><span>Architecture</span><strong>AArch64</strong><small>Cortex-A53 · musl</small></article>
-      <article><span>Clean check</span><strong>EXIT 0</strong><small>50 second scan</small></article>
-      <article><span>Coverage</span><strong>9,052</strong><small>filesystem entries</small></article>
+      <article><span>Builds</span><strong>2</strong><small>architecture-specific</small></article>
+      <article><span>Architectures</span><strong>64 + 32</strong><small>bit · musl</small></article>
+      <article><span>Clean checks</span><strong>EXIT 0</strong><small>both routers</small></article>
+      <article><span>Coverage</span><strong>13,850</strong><small>combined entries</small></article>
+    </section>
+
+    <section id="architectures">
+      <p class="eyebrow">ARCHITECTURE COMPARISON</p>
+      <h2 class="section-title">Same integrity engine. Different machine contracts.</h2>
+      <div class="arch-compare">
+        <article>
+          <span>NORDNET FIBER</span>
+          <h3>AArch64 Cortex-A53</h3>
+          <dl>
+            <div><dt>Instruction set</dt><dd>ARMv8-A, 64-bit</dd></div>
+            <div><dt>ABI</dt><dd>AArch64 LP64</dd></div>
+            <div><dt>Binary</dt><dd>599,720 bytes</dd></div>
+            <div><dt>Database</dt><dd>9,000 entries</dd></div>
+            <div><dt>Live scan</dt><dd>52 seconds, clean</dd></div>
+          </dl>
+          <code>2d8f8f1171cf…3c750a3cf8d</code>
+        </article>
+        <article>
+          <span>MOVISTAR E554 VPN</span>
+          <h3>ARMv7 Cortex-A7 hard-float</h3>
+          <dl>
+            <div><dt>Instruction set</dt><dd>ARMv7-A, 32-bit</dd></div>
+            <div><dt>ABI</dt><dd>EABI5, VFP hard-float</dd></div>
+            <div><dt>Binary</dt><dd>522,084 bytes</dd></div>
+            <div><dt>Database</dt><dd>4,850 entries</dd></div>
+            <div><dt>Live scan</dt><dd>1m 32s, clean</dd></div>
+          </dl>
+          <code>6bd027ff8fc4…802a4ffc8e9</code>
+        </article>
+      </div>
+      <p class="architecture-note">The binaries are not interchangeable. AArch64 uses 64-bit ARMv8 instructions and the LP64 ABI; the Movistar build uses 32-bit ARMv7 instructions, EABI5, NEON/VFPv4, and hardware floating point. Both enable PCRE2, pthread, and Nettle and use the same AIDE policy.</p>
     </section>
 
     <section class="story">
@@ -32,6 +65,42 @@
         <h2>A small binary for a constrained router.</h2>
       </div>
       <p>The router package feeds did not provide AIDE. We reproduced the device environment in QEMU, assembled the compiler in tmpfs, built mandatory cryptographic dependencies statically, and kept only musl and libgcc as runtime dependencies.</p>
+    </section>
+
+    <section id="code">
+      <p class="eyebrow">PROCESSOR-DEPENDENT CODE</p>
+      <h2 class="section-title">Four languages. Two target contracts.</h2>
+      <div class="code-grid">
+        <article><span>C</span><pre><code>#if defined(__aarch64__)
+architecture = "AArch64";
+#elif defined(__arm__)
+architecture = "ARMv7";
+#endif</code></pre><p><code>sizeof(void*)</code> is 8 versus 4.</p></article>
+        <article><span>C++</span><pre><code>#if defined(__ARM_PCS_VFP)
+architecture =
+  "ARMv7-hard-float";
+#endif</code></pre><p>The ARMv7 build uses the VFP hard-float calling convention.</p></article>
+        <article><span>RUST</span><pre><code>#[cfg(target_arch="aarch64")]
+let architecture = "AArch64";
+println!("{}", usize::BITS);</code></pre><p><code>usize::BITS</code> is 64 versus 32.</p></article>
+        <article><span>ASSEMBLY</span><pre><code>// AArch64     // ARMv7
+mov w0,#64     mov r0,#32
+ret            bx lr</code></pre><p>Return registers and return instructions differ.</p></article>
+      </div>
+      <p class="architecture-note">The daily workflow compiles and runs every example inside its matching emulated processor before publishing. Full source and expected output are documented in <code>docs/architecture-behavior.md</code>.</p>
+    </section>
+
+    <section id="repositories">
+      <p class="eyebrow">REPOSITORY MAP</p>
+      <h2 class="section-title">Sources, workspace, and published result.</h2>
+      <div class="repo-list">
+        <article><span>Published GitHub</span><strong>martibayoalemany9/aide-openwrt-build</strong><p>Scripts, policy, checksums, and this report.</p></article>
+        <article><span>AIDE source</span><strong>aide/aide</strong><p>Upstream 0.19.3 release.</p></article>
+        <article><span>PCRE2 source</span><strong>PCRE2Project/pcre2</strong><p>Mandatory regex library, statically linked.</p></article>
+        <article><span>GNU sources</span><strong>nettle · bison</strong><p>Cryptographic hashes and parser skeleton data.</p></article>
+        <article><span>QEMU workspace</span><strong>openwrt-qemu-aarch64-overlay</strong><p>Local clone, boot tooling, and build output.</p></article>
+        <article><span>Local checkout</span><strong>Desktop/aide-openwrt-build</strong><p>The Git checkout serving this report.</p></article>
+      </div>
     </section>
 
     <section>
@@ -47,16 +116,22 @@
 
     <section class="dark" id="commands">
       <div>
-        <p class="eyebrow">REPRODUCE</p>
-        <h2>The complete build is executable.</h2>
-        <p>Every dependency version, configure flag, environment variable, and workaround is captured in the repository scripts.</p>
+        <p class="eyebrow">AIDE OPTIONS</p>
+        <h2>The router exposes the full integrity workflow.</h2>
+        <p>Initialize, check, update, compare, list, validate configuration, inspect path matching, limit scans, and select worker count.</p>
       </div>
-      <pre><code>./scripts/prepare-sources.sh ./distfiles
-# copy distfiles + build script into QEMU
-/tmp/build-aide-openwrt.sh /tmp/distfiles
-
-sha256sum /tmp/aide-0.19.3/aide
-# 2d8f8f1171cf...3cf8d</code></pre>
+      <div class="option-list">
+        <code>--init</code><span>Create a new database</span>
+        <code>--dry-init</code><span>Test rule traversal</span>
+        <code>--check</code><span>Compare filesystem to baseline</span>
+        <code>--update</code><span>Check and write an updated database</span>
+        <code>--compare</code><span>Compare two databases</span>
+        <code>--list</code><span>List recorded entries</span>
+        <code>--config-check</code><span>Validate configuration</span>
+        <code>--path-check</code><span>Inspect one path's rule match</span>
+        <code>--limit</code><span>Restrict scan by regex</span>
+        <code>--workers</code><span>Choose hash worker threads</span>
+      </div>
     </section>
 
     <section id="integrity">
@@ -69,14 +144,53 @@ sha256sum /tmp/aide-0.19.3/aide
       </div>
     </section>
 
+    <section class="conf">
+      <div><p class="eyebrow">ACTIVE /etc/aide.conf</p><h2 class="section-title">Persistent baseline. Quiet where the router is expected to write.</h2><p>The AIDE database and dynamic GL.iNet service databases are excluded. All core executable, library, configuration, web, and root paths are covered.</p></div>
+      <pre><code>database_in=file:/etc/aide/aide.db
+database_out=file:/etc/aide/aide.db.new
+database_new=file:/etc/aide/aide.db.new
+log_level=notice
+Checks = p+n+u+g+s+m+c+sha256
+!/etc/aide(/.*)?$
+!/etc/AdGuardHome/data(/.*)?$
+!/etc/netifyd(/.*)?$
+!/etc/oui-tertf(/.*)?$
+!/tmp
+!/var/run
+!/run
+!/proc
+!/sys
+!/dev
+/bin Checks
+/sbin Checks
+/etc Checks
+/lib Checks
+/usr Checks
+/www Checks
+/root Checks</code></pre>
+    </section>
+
+    <section id="proof" class="proof">
+      <p class="eyebrow">LIVE PROOF · 29 JUL 2026</p>
+      <h2 class="section-title">One added file. Immediately detected.</h2>
+      <div class="proof-grid">
+        <pre><code>$ printf 'AIDE live integrity test\n' \
+  &gt; /etc/integrity-demo.txt
+$ aide --config=/etc/aide.conf \
+  --check --no-progress --no-color</code></pre>
+        <div class="result"><span>ADDED ENTRIES</span><strong>1</strong><code>f+++++++++++++: /etc/integrity-demo.txt</code><p>Exit <b>5</b> = added file bit <b>1</b> + changed parent-directory bit <b>4</b>.</p></div>
+      </div>
+    </section>
+
     <section class="hash">
-      <p class="eyebrow">BINARY SHA-256</p>
-      <button id="copyHash" title="Copy checksum">2d8f8f1171cfbec1bfc6ea66a3f7d4732b8f0152d54a00637760b3c750a3cf8d</button>
+      <p class="eyebrow">RELEASE BINARY SHA-256</p>
+      <button id="copyHash" title="Copy checksums">AArch64  2d8f8f1171cfbec1bfc6ea66a3f7d4732b8f0152d54a00637760b3c750a3cf8d
+ARMv7    6bd027ff8fc4d21cec7993af9cab4eab2c31055164dd3efd5b716802a4ffc8e9</button>
       <span id="copyState" aria-live="polite"></span>
     </section>
   </main>
 
-  <footer><span>AIDE 0.19.3 · OpenWrt · AArch64</span><span>Built, tested, documented.</span></footer>
+  <footer><span>AIDE 0.19.3 · OpenWrt · AArch64 + ARMv7</span><span>Built, tested, documented.</span></footer>
   <script src="app.js"></script>
 </body>
 </html>

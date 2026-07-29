@@ -1,0 +1,103 @@
+.arch-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 42px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+
+.arch-compare article {
+  padding: 34px;
+  background: var(--paper);
+}
+
+.arch-compare article:last-child {
+  background: var(--acid);
+}
+
+.arch-compare span,
+.arch-compare dt {
+  font: 11px var(--mono);
+  letter-spacing: .08em;
+}
+
+.arch-compare h3 {
+  margin: 18px 0 28px;
+  font-size: clamp(28px, 4vw, 52px);
+  line-height: 1;
+}
+
+.arch-compare dl {
+  margin: 0 0 28px;
+}
+
+.arch-compare dl div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 10px 0;
+  border-top: 1px solid rgba(23, 32, 29, .25);
+}
+
+.arch-compare dd {
+  margin: 0;
+  text-align: right;
+}
+
+.arch-compare code {
+  font: 12px var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.architecture-note {
+  max-width: 950px;
+  margin: 32px 0 0;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.code-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin-top: 42px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+
+.code-grid article {
+  min-width: 0;
+  padding: 28px;
+  background: var(--paper);
+}
+
+.code-grid article > span {
+  font: 700 11px var(--mono);
+  letter-spacing: .1em;
+}
+
+.code-grid pre {
+  overflow: auto;
+  padding: 18px;
+  background: var(--ink);
+  color: var(--acid);
+  font: 12px/1.55 var(--mono);
+}
+
+.code-grid p {
+  line-height: 1.5;
+}
+
+.hash button {
+  white-space: pre-line;
+}
+
+@media (max-width: 800px) {
+  .arch-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .code-grid {
+    grid-template-columns: 1fr;
+  }
+}

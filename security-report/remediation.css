@@ -1,0 +1,65 @@
+.findings .resolved {
+  border-top: 5px solid var(--acid);
+}
+
+.remediation {
+  background: #e4eadb;
+}
+
+.remediation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: 35px 0;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+
+.remediation-grid article {
+  padding: 28px;
+  background: var(--paper);
+}
+
+.remediation-grid article:last-child {
+  background: var(--acid);
+}
+
+.remediation-grid span {
+  font: 700 11px var(--mono);
+  letter-spacing: .1em;
+}
+
+.remediation pre,
+.audit-details pre {
+  overflow: auto;
+  margin: 18px 0 0;
+  padding: 20px;
+  background: var(--ink);
+  color: var(--acid);
+  font: 12px/1.6 var(--mono);
+}
+
+.audit-details {
+  margin-top: 14px;
+  padding: 20px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.audit-details table {
+  margin-top: 18px;
+}
+
+.audit-details th {
+  width: 25%;
+}
+
+.audit-details code {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 850px) {
+  .remediation-grid {
+    grid-template-columns: 1fr;
+  }
+}

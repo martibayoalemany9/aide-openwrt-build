@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Nmap and GitHub code-scanning security report for two GL.iNet OpenWrt routers">
+  <title>Router Exposure &amp; Vulnerability Report</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="interactions.css">
+  <link rel="stylesheet" href="remediation.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <strong>ROUTER // SECURITY</strong>
+      <a href="#summary">Summary</a>
+      <a href="#exposure">Exposure</a>
+      <a href="#findings">Findings</a>
+      <a href="#github">GitHub scan</a>
+      <a href="#evidence">Evidence</a>
+    </nav>
+    <div class="hero">
+      <p class="kicker">POINT-IN-TIME ASSESSMENT · 29 JUL 2026 · EUROPE/BERLIN</p>
+      <h1>Two routers.<br>One measured attack surface.</h1>
+      <p class="intro">Network service discovery, targeted Nmap vulnerability checks, TLS and SSH configuration review, and GitHub SARIF code scanning for the AIDE build repository.</p>
+      <div class="hero-status"><span></span><b>TERRAPIN MITIGATED</b><em>ChaCha20-Poly1305 removed · fresh login and external rescan passed</em></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="summary" class="metrics">
+      <article><small>Hosts assessed</small><strong>2</strong><span>NordNet + Movistar</span></article>
+      <article><small>Confirmed open TCP</small><strong>8</strong><span>6 NordNet · 2 Movistar</span></article>
+      <article><small>Confirmed CVEs</small><strong>0</strong><span>version matching is not proof</span></article>
+      <article><small>GitHub alerts</small><strong>0</strong><span>Semgrep SARIF completed</span></article>
+    </section>
+
+    <section class="overview">
+      <div>
+        <p class="kicker">EXECUTIVE SUMMARY</p>
+        <h2>Exposure is controlled, but one old SSH banner needs verification.</h2>
+      </div>
+      <div class="summary-copy">
+        <p>Movistar exposes SSH 22 and HTTPS 443 through the tested Tailscale path. Its TLS configuration is strong, but the SSH banner reports OpenSSH 8.4. The Terrapin-relevant ChaCha20-Poly1305 cipher was removed on 29 July 2026. A full sshd restart, fresh login, and external Nmap rescan confirmed that only AES-GCM and AES-CTR remain advertised.</p>
+        <p>NordNet exposes DNS and five web-management ports in the targeted pass. Several services are TCP-wrapped and the router rate-limited later probes, preventing reliable version-to-CVE correlation. This is a scan limitation, not evidence of safety.</p>
+      </div>
+    </section>
+
+    <section id="exposure">
+      <p class="kicker">OBSERVED TCP EXPOSURE</p>
+      <h2>Services reachable from this Tailscale client.</h2>
+      <div class="host-grid">
+        <article>
+          <div class="host-head"><span>NORDNET FIBER</span><code>100.121.67.112</code></div>
+          <table>
+            <thead><tr><th>Port</th><th>State</th><th>Identification</th><th>Assessment</th></tr></thead>
+            <tbody>
+              <tr><td>53/tcp</td><td><i class="open">open</i></td><td>DNS, identified as Cloudflare public DNS</td><td><details><summary>Why this matters</summary><p>This listener is not required by MagicDNS. MagicDNS uses the local Tailscale resolver at <code>100.100.100.100</code>. Restrict port 53 unless NordNet is intentionally a tailnet DNS server.</p></details></td></tr>
+              <tr><td>80/tcp</td><td><i class="open">open</i></td><td>tcpwrapped</td><td><details><summary>Why this matters</summary><p>Plain HTTP can expose sessions unless it performs an immediate redirect to HTTPS. The wrapper prevented reliable header inspection.</p></details></td></tr>
+              <tr><td>443/tcp</td><td><i class="open">open</i></td><td>tcpwrapped</td><td><details open><summary>HSTS status</summary><p>HSTS was not observed. Remediation was requested, but NordNet began dropping SSH and HTTPS administration attempts after rate-limiting the scan. No unvalidated configuration change was made.</p></details></td></tr>
+              <tr><td>3000/tcp</td><td><i class="open">open</i></td><td>tcpwrapped</td><td><details><summary>Why this matters</summary><p>An extra management listener increases attack surface. Confirm its owner and disable it if 8443 provides the required UI.</p></details></td></tr>
+              <tr><td>8080/tcp</td><td><i class="open">open</i></td><td>OpenWrt uHTTPd</td><td><details><summary>Why this matters</summary><p>This is a plaintext management surface. Prefer HTTPS and restrict access with the Tailscale ACL and router firewall.</p></details></td></tr>
+              <tr><td>8443/tcp</td><td><i class="open">open</i></td><td>HTTPS → LuCI redirect</td><td><details><summary>Why this matters</summary><p>This is the preferred encrypted management endpoint. Verify that it returns HSTS after router administration access recovers and remediation is applied.</p></details></td></tr>
+              <tr><td>22/tcp</td><td><i class="filtered">filtered</i></td><td>SSH</td><td>Filtered during this Nmap pass.</td></tr>
+              <tr><td>139,445/tcp</td><td><i class="closed">closed</i></td><td>SMB/NetBIOS</td><td>No SMB listener observed.</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article>
+          <div class="host-head"><span>MOVISTAR E554 VPN</span><code>100.93.145.71</code></div>
+          <table>
+            <thead><tr><th>Port</th><th>State</th><th>Identification</th><th>Assessment</th></tr></thead>
+            <tbody>
+              <tr><td>22/tcp</td><td><i class="open">open</i></td><td>OpenSSH 8.4p1-4</td><td><details open><summary>Mitigated</summary><p>The banner remains old, but the Terrapin-affected ChaCha20-Poly1305 mode is no longer advertised. AES-GCM and AES-CTR remain. Upgrade is still preferred when a supported package becomes available.</p></details></td></tr>
+              <tr><td>443/tcp</td><td><i class="open">open</i></td><td>nginx · Admin Panel</td><td><details><summary>TLS details</summary><p>TLS 1.2/1.3, grade-A ciphers, valid Let’s Encrypt certificate, and HSTS with a one-year lifetime.</p></details></td></tr>
+              <tr><td>53,80/tcp</td><td><i class="filtered">filtered</i></td><td>DNS / HTTP</td><td>Silently filtered.</td></tr>
+              <tr><td>139,445/tcp</td><td><i class="filtered">filtered</i></td><td>SMB/NetBIOS</td><td>Silently filtered.</td></tr>
+              <tr><td>3000,8080,8443/tcp</td><td><i class="filtered">filtered</i></td><td>Alternate web ports</td><td>Silently filtered.</td></tr>
+            </tbody>
+          </table>
+        </article>
+      </div>
+    </section>
+
+    <section id="findings" class="dark">
+      <p class="kicker">VULNERABILITY TRIAGE</p>
+      <h2>Candidates are ranked by applicability—not scanner score alone.</h2>
+      <div class="findings">
+        <article class="resolved">
+          <div><span>MITIGATED · VERIFIED</span><b>Movistar · SSH 22</b></div>
+          <h3><a href="https://nvd.nist.gov/vuln/detail/CVE-2023-48795">CVE-2023-48795 — Terrapin</a></h3>
+          <p>OpenSSH 8.4p1-4 remains in the upstream affected version range and does not advertise strict key exchange. The practical server-side mitigation removes <code>chacha20-poly1305@openssh.com</code>; the observed MAC list never contained CBC Encrypt-then-MAC modes.</p>
+          <p class="action">Result: syntax validation, full sshd restart, fresh password login, service status, and external Nmap algorithm enumeration all passed.</p>
+        </article>
+
+        <article class="resolved">
+          <div><span>CONDITION ABSENT</span><b>Movistar · SSH 22</b></div>
+          <h3><a href="https://nvd.nist.gov/vuln/detail/CVE-2021-41617">CVE-2021-41617 — sshd supplemental groups</a></h3>
+          <p>The installed version matches the upstream range, but the exploitable configuration path is inactive. Effective configuration reports <code>AuthorizedKeysCommand none</code> and <code>AuthorizedPrincipalsCommand none</code>, with no active helper directives.</p>
+          <p class="action">Result: not reachable under the current server configuration. Reassess if either command helper is enabled later.</p>
+        </article>
+
+        <article class="context">
+          <div><span>NOT A SERVER FINDING</span><b>Movistar · version correlation only</b></div>
+          <h3>Client-side OpenSSH candidates</h3>
+          <p><a href="https://nvd.nist.gov/vuln/detail/CVE-2023-38408">CVE-2023-38408</a> affects forwarded <code>ssh-agent</code>; <a href="https://nvd.nist.gov/vuln/detail/CVE-2025-26465">CVE-2025-26465</a> depends on client <code>VerifyHostKeyDNS</code>; and <a href="https://nvd.nist.gov/vuln/detail/CVE-2020-14145">CVE-2020-14145</a> is a client-side information leak. Their appearance in version-only output does not demonstrate an exploitable router SSH server.</p>
+        </article>
+
+        <article class="false-positive">
+          <div><span>FALSE POSITIVE</span><b>Movistar · HTTPS 443</b></div>
+          <h3><a href="https://nvd.nist.gov/vuln/detail/CVE-2011-3192">CVE-2011-3192 — Apache byterange DoS</a></h3>
+          <p>The NSE script labeled the endpoint vulnerable, but service detection and response headers identify nginx. NVD limits this CVE to old Apache HTTP Server releases, so this result is rejected unless an Apache reverse-proxy layer is independently demonstrated.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="remediation" class="remediation">
+      <p class="kicker">MOVISTAR SSH REMEDIATION · 29 JUL 2026</p>
+      <h2>Validated, reversible, and externally confirmed.</h2>
+      <div class="remediation-grid">
+        <article>
+          <span>BEFORE</span>
+          <pre><code>chacha20-poly1305@openssh.com
+aes256-gcm@openssh.com
+aes128-gcm@openssh.com
+aes256-ctr
+aes128-ctr</code></pre>
+        </article>
+        <article>
+          <span>AFTER</span>
+          <pre><code>aes256-gcm@openssh.com
+aes128-gcm@openssh.com
+aes256-ctr
+aes128-ctr</code></pre>
+        </article>
+      </div>
+      <details open class="audit-details">
+        <summary>Change and rollback details</summary>
+        <table>
+          <tbody>
+            <tr><th>Active configuration</th><td><code>/etc/ssh/sshd_config</code></td></tr>
+            <tr><th>Rollback backup</th><td><code>/etc/ssh/sshd_config.pre-terrapin-20260729_165424_GMT</code></td></tr>
+            <tr><th>Active SHA-256</th><td><code>3f88c1439f32d48d430057dcd1bafbbbdbd4538bbd73a5809052fad5a37f3c4c</code></td></tr>
+            <tr><th>Backup SHA-256</th><td><code>b6bb583c0ac0349257ce6ab0bebb2814abb5b73840ea08049ffff475ba64434a</code></td></tr>
+            <tr><th>Validation</th><td><code>sshd -t</code>, effective configuration, full restart, fresh login, Nmap enumeration</td></tr>
+            <tr><th>Service result</th><td><code>running</code>; post-restart login succeeded</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="audit-details">
+        <summary>Exact effective security state</summary>
+        <pre><code>ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes128-ctr
+macs hmac-sha2-512,hmac-sha2-256
+kexalgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group14-sha256
+authorizedkeyscommand none
+authorizedprincipalscommand none</code></pre>
+      </details>
+    </section>
+
+    <section id="transport">
+      <p class="kicker">TRANSPORT SECURITY</p>
+      <div class="hsts-explainer">
+        <span>WHAT IS HSTS?</span>
+        <p><b>HTTP Strict Transport Security</b> is an HTTPS response header that tells a browser to use HTTPS only for a domain during a defined period. It helps prevent protocol-downgrade and cookie exposure caused by an initial HTTP request. HSTS is effective only after the browser receives it over a valid HTTPS connection; <code>includeSubDomains</code> extends the rule to subdomains.</p>
+      </div>
+      <div class="transport-grid">
+        <article>
+          <h2>Movistar HTTPS</h2>
+          <ul>
+            <li>TLS 1.2 and TLS 1.3 enabled</li>
+            <li>Nmap least cipher strength: <b>A</b></li>
+            <li>HSTS: <code>max-age=31536000; includeSubDomains</code></li>
+            <li>ECDSA P-256 certificate issued by Let’s Encrypt YE2</li>
+            <li>SAN: <code>movistar-e554-vpn.tail07d41.ts.net</code></li>
+            <li>Validity: 25 Jul 2026 – 23 Oct 2026</li>
+          </ul>
+        </article>
+        <article>
+          <h2>Movistar SSH</h2>
+          <ul>
+            <li>Modern Curve25519 and group14-SHA256 key exchange</li>
+            <li>Ed25519 and RSA-SHA2 host keys</li>
+            <li>AES-GCM and AES-CTR encryption; ChaCha20-Poly1305 disabled</li>
+            <li>SHA-2 MACs only in the observed list</li>
+            <li>No SHA-1 host signatures or CBC encryption advertised</li>
+          </ul>
+        </article>
+        <article>
+          <h2>NordNet management</h2>
+          <ul>
+            <li>uHTTPd reachable over plaintext port 8080</li>
+            <li>HTTPS/LuCI reachable on port 8443</li>
+            <li>HSTS not observed on the tested 443 listener</li>
+            <li>Several listeners are TCP-wrapped and suppress fingerprints</li>
+            <li>Prefer 8443 and restrict 80/3000/8080 when unnecessary</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="github" class="github">
+      <p class="kicker">GITHUB CODE SCANNING</p>
+      <h2>Semgrep completed with zero alerts.</h2>
+      <p>The repository now runs <code>p/default</code> and <code>p/security-audit</code>, emits SARIF, and uploads it to GitHub code scanning. Both the push and pull-request runs completed successfully. No code vulnerability links exist because no alerts were generated.</p>
+      <div class="link-row">
+        <a href="https://github.com/martibayoalemany9/aide-openwrt-build">GitHub repository ↗</a>
+        <a href="https://github.com/martibayoalemany9/aide-openwrt-build/security/code-scanning">Code scanning alerts ↗</a>
+        <a href="https://github.com/martibayoalemany9/aide-openwrt-build/actions/runs/30458760025">Successful push scan ↗</a>
+        <a href="https://github.com/martibayoalemany9/aide-openwrt-build/pull/1">Draft pull request ↗</a>
+      </div>
+    </section>
+
+    <section id="recommendations">
+      <p class="kicker">PRIORITIZED ACTIONS</p>
+      <ol class="recommendations">
+        <li><b>Upgrade Movistar OpenSSH when supported.</b><span>The cipher mitigation is verified, but a vendor-supported version with strict key exchange remains the preferred long-term fix.</span></li>
+        <li><b>Apply and verify NordNet HSTS.</b><span>Add <code>Strict-Transport-Security: max-age=31536000; includeSubDomains</code> to the HTTPS server after management access recovers, validate nginx, reload, and verify ports 443 and 8443.</span></li>
+        <li><b>Reduce NordNet management listeners.</b><span>Restrict or disable ports 80, 3000, and 8080 if 8443 provides the required administration path.</span></li>
+        <li><b>Validate NordNet TCP DNS exposure.</b><span>Ensure port 53 is intentionally reachable over Tailscale and recursion/access control is scoped appropriately.</span></li>
+        <li><b>Keep the GitHub scan required.</b><span>Merge the draft PR so scheduled Semgrep SARIF and daily binary builds run from the default branch.</span></li>
+        <li><b>Repeat after firmware changes.</b><span>Compare services, versions, TLS posture, and AIDE results after every router upgrade.</span></li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <p class="kicker">EVIDENCE &amp; LIMITATIONS</p>
+      <h2>Raw outputs are preserved for review.</h2>
+      <div class="evidence-grid">
+        <a href="raw/nordnet-service-scan.nmap"><b>NordNet service scan</b><span>Nmap normal output</span></a>
+        <a href="raw/nordnet-vulnerability-scan.nmap"><b>NordNet vulnerability pass</b><span>Rate-limited result</span></a>
+        <a href="raw/movistar-service-scan.nmap"><b>Movistar service scan</b><span>TLS, SSH, headers</span></a>
+        <a href="raw/movistar-vulnerability-scan.nmap"><b>Movistar vulnerability pass</b><span>Vulners and NSE output</span></a>
+        <a href="raw/movistar-post-terrapin-final.nmap"><b>Movistar post-fix SSH scan</b><span>ChaCha absent; four AES ciphers</span></a>
+      </div>
+      <div class="limitations">
+        <p><b>Scanner:</b> Nmap 7.99 over Tailscale. Full 65,535-port attempts hit host timeouts because silent filtering made completion impractical; targeted results are authoritative only for the listed ports at scan time.</p>
+        <p><b>UDP:</b> not assessed because raw-socket UDP scanning required local administrator privileges unavailable to this session.</p>
+        <p><b>CVE confidence:</b> banner/CPE matching cannot detect vendor backports. “Version-correlated” findings require package/changelog verification. No exploitation, brute force, credential guessing, or denial-of-service test was performed.</p>
+        <p><b>Scope:</b> results describe reachability from this specific Tailscale client, not WAN or LAN exposure.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>AUTHORIZED INTERNAL ASSESSMENT · 2026-07-29</span>
+    <a href="../web/">AIDE build report</a>
+  </footer>
+</body>
+</html>

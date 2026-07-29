@@ -1,0 +1,29 @@
+# Nmap 7.99 scan initiated Wed Jul 29 18:56:02 2026 as: nmap -Pn -n -sT -p 22 --script banner,ssh2-enum-algos --script-timeout 60s --host-timeout 3m -oA /Users/username/Desktop/aide-openwrt-build/security-report/raw/movistar-post-terrapin-final 100.93.145.71
+Nmap scan report for 100.93.145.71
+Host is up (0.71s latency).
+
+PORT   STATE SERVICE
+22/tcp open  ssh
+| ssh2-enum-algos:
+|   kex_algorithms: (3)
+|       curve25519-sha256
+|       curve25519-sha256@libssh.org
+|       diffie-hellman-group14-sha256
+|   server_host_key_algorithms: (3)
+|       rsa-sha2-512
+|       rsa-sha2-256
+|       ssh-ed25519
+|   encryption_algorithms: (4)
+|       aes256-gcm@openssh.com
+|       aes128-gcm@openssh.com
+|       aes256-ctr
+|       aes128-ctr
+|   mac_algorithms: (2)
+|       hmac-sha2-512
+|       hmac-sha2-256
+|   compression_algorithms: (2)
+|       none
+|_      zlib@openssh.com
+|_banner: SSH-2.0-OpenSSH_8.4
+
+# Nmap done at Wed Jul 29 18:56:05 2026 -- 1 IP address (1 host up) scanned in 2.26 seconds

@@ -1,0 +1,93 @@
+# Nmap 7.99 scan initiated Wed Jul 29 16:15:18 2026 as: nmap -Pn -n -sT -sV --version-all -p 22,53,80,139,443,445,3000,8080,8443 --script banner,http-title,http-headers,http-security-headers,ssl-cert,ssl-enum-ciphers,ssh2-enum-algos,smb-protocols,smb-security-mode --script-timeout 45s --host-timeout 5m -oA /Users/username/Desktop/aide-openwrt-build/security-report/raw/movistar-service-scan 100.93.145.71
+Nmap scan report for 100.93.145.71
+Host is up (0.13s latency).
+
+PORT     STATE    SERVICE      VERSION
+22/tcp   open     ssh          OpenSSH 8.4 (protocol 2.0)
+|_banner: SSH-2.0-OpenSSH_8.4
+| ssh2-enum-algos:
+|   kex_algorithms: (3)
+|       curve25519-sha256
+|       curve25519-sha256@libssh.org
+|       diffie-hellman-group14-sha256
+|   server_host_key_algorithms: (3)
+|       rsa-sha2-512
+|       rsa-sha2-256
+|       ssh-ed25519
+|   encryption_algorithms: (5)
+|       chacha20-poly1305@openssh.com
+|       aes256-gcm@openssh.com
+|       aes128-gcm@openssh.com
+|       aes256-ctr
+|       aes128-ctr
+|   mac_algorithms: (2)
+|       hmac-sha2-512
+|       hmac-sha2-256
+|   compression_algorithms: (2)
+|       none
+|_      zlib@openssh.com
+53/tcp   filtered domain
+80/tcp   filtered http
+139/tcp  filtered netbios-ssn
+443/tcp  open     ssl/http     nginx
+| ssl-enum-ciphers:
+|   TLSv1.2:
+|     ciphers:
+|       TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8 (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_256_CCM (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8 (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_128_CCM (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA (ecdh_x25519) - A
+|       TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA (ecdh_x25519) - A
+|     compressors:
+|       NULL
+|     cipher preference: server
+|   TLSv1.3:
+|     ciphers:
+|       TLS_AKE_WITH_CHACHA20_POLY1305_SHA256 (ecdh_x25519) - A
+|       TLS_AKE_WITH_AES_256_GCM_SHA384 (ecdh_x25519) - A
+|       TLS_AKE_WITH_AES_128_GCM_SHA256 (ecdh_x25519) - A
+|     cipher preference: server
+|_  least strength: A
+|_http-title: Admin Panel
+| http-security-headers:
+|   Strict_Transport_Security:
+|     Header: Strict-Transport-Security: max-age=31536000; includeSubDomains
+|   Cache_Control:
+|_    Header: Cache-Control: private, no-store, no-cache, must-revalidate, proxy-revalidate
+| http-headers:
+|   Server: nginx
+|   Date: Wed, 29 Jul 2026 14:15:35 GMT
+|   Content-Type: text/html
+|   Content-Length: 738
+|   Last-Modified: Wed, 16 Feb 2022 20:29:10 GMT
+|   Connection: close
+|   ETag: "620d5e96-2e2"
+|   Cache-Control: private, no-store, no-cache, must-revalidate, proxy-revalidate
+|   Strict-Transport-Security: max-age=31536000; includeSubDomains
+|   Accept-Ranges: bytes
+|
+|_  (Request type: HEAD)
+| ssl-cert: Subject: commonName=movistar-e554-vpn.tail07d41.ts.net
+| Subject Alternative Name: DNS:movistar-e554-vpn.tail07d41.ts.net
+| Issuer: commonName=YE2/organizationName=Let's Encrypt/countryName=US
+| Public Key type: ec
+| Public Key bits: 256
+| Signature Algorithm: ecdsa-with-SHA384
+| Not valid before: 2026-07-25T06:11:47
+| Not valid after:  2026-10-23T06:11:46
+| MD5:     106a 6e17 75bc 8aeb cab7 94bd 022a 493a
+| SHA-1:   02dd c60c 4dc6 41d3 cdd4 f951 4d56 73fe 4b8d b745
+|_SHA-256: 370b a815 e9fe 6cb1 1d29 21f6 da45 c36b fb16 bbfd 9d95 db5d 0b04 216c 0d19 2d17
+445/tcp  filtered microsoft-ds
+3000/tcp filtered ppp
+8080/tcp filtered http-proxy
+8443/tcp filtered https-alt
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Wed Jul 29 16:16:02 2026 -- 1 IP address (1 host up) scanned in 44.62 seconds
